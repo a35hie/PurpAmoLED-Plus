@@ -66,7 +66,7 @@ function parseValue(type: string, rawValue: string): Node['value'] {
 
     return {
       type: 'color',
-      value: rawValue,
+      value: rawValue.toUpperCase(),
     }
   }
 
@@ -130,7 +130,7 @@ function parse(source: string): Node {
     const parent = stack.at(-1)!.node
 
     if (line.startsWith('[')) {
-      const match = line.match(/^\[index="(\d+)"\]$/)
+      const match = line.match(/^\[index="(\d+)"]$/)
 
       if (!match) {
         throw new Error(`Line ${lineNumber + 1}: invalid array index "${line}"`)
@@ -187,8 +187,6 @@ function parse(source: string): Node {
     const [, type, rawValue] = valueMatch
 
     parent.value = parseValue(type, rawValue)
-
-    continue
   }
 
   return root
