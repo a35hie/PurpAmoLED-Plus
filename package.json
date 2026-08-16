@@ -1,0 +1,28 @@
+{
+  "name": "@a35hie/purpamoled-plus",
+  "version": "1.0.0",
+  "description": "Vorlie’s PurpAmoLED but updated to implement Themes+",
+  "keywords": [
+    "discord",
+    "discord-theme"
+  ],
+  "homepage": "https://github.com/a35hie/PurpAmoLED-Plus#readme",
+  "bugs": {
+    "url": "https://github.com/a35hie/PurpAmoLED-Plus/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/a35hie/PurpAmoLED-Plus.git"
+  },
+  "license": "GPL-3.0",
+  "author": "a35hie",
+  "type": "module",
+  "main": "src/parser.ts",
+  "scripts": {
+    "parse": "bun run src/parser.ts",
+    "dev": "bun run src/dev.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0"
+  }
+}

@@ -1,3 +1,2 @@
 *.txt
-theme.json
-
+node_modules
