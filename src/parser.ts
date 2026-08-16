@@ -278,10 +278,16 @@ function convert(node: Node): unknown {
 }
 
 function build(root: Node): Record<string, unknown> {
-  const result = convert(root)
+  const index = root.children.find(child => child.name === 'index')
+
+  if (!index) {
+    throw new Error('Theme must contain a ".index" root')
+  }
+
+  const result = convert(index)
 
   if (typeof result !== 'object' || result === null || Array.isArray(result)) {
-    throw new Error('Theme root must be an object')
+    throw new Error('".index" must contain an object')
   }
 
   return result as Record<string, unknown>
