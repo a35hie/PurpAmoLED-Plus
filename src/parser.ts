@@ -5,6 +5,14 @@ type Primitive = string | number | boolean | null
 
 type ValueType = 'string' | 'number' | 'boolean' | 'color'
 
+interface PackageJson {
+  [key: string]: unknown
+}
+
+interface Variables {
+  pkg: PackageJson
+}
+
 interface Annotation {
   type?: ValueType
   override?: string
@@ -23,6 +31,7 @@ interface Node {
 
 const INPUT = resolve('src/theme.sass')
 const OUTPUT = resolve('dist/theme.json')
+const PACKAGE_JSON = resolve('package.json')
 
 await mkdir(dirname(OUTPUT), { recursive: true })
 
@@ -54,13 +63,17 @@ function parseAnnotation(line: string): Annotation | null {
   return null
 }
 
-function parseValue(type: string, rawValue: string): Node['value'] {
+function parseValue(
+  type: string,
+  rawValue: string,
+  variables: Variables
+): Node['value'] {
   if (type !== 'content' && type !== 'color') {
     throw new Error(`Unknown value type: ${type}`)
   }
 
   if (type === 'color') {
-    if (!/^#[0-9a-fA-F]{3,8}$/.test(rawValue)) {
+    if (!/^#[0-9a-fA-F]{6,8}$/.test(rawValue)) {
       throw new Error(`Invalid color: ${rawValue}`)
     }
 
@@ -71,19 +84,25 @@ function parseValue(type: string, rawValue: string): Node['value'] {
   }
 
   if (rawValue.startsWith('"') && rawValue.endsWith('"')) {
+    const parsed = JSON.parse(rawValue)
+
+    if (typeof parsed !== 'string') {
+      throw new Error(`Content must contain a string`)
+    }
+
     return {
       type: 'string',
-      value: JSON.parse(rawValue),
+      value: interpolate(parsed, variables),
     }
   }
 
   return {
     type: 'string',
-    value: rawValue,
+    value: interpolate(rawValue, variables),
   }
 }
 
-function parse(source: string): Node {
+function parse(source: string, variables: Variables): Node {
   const root: Node = {
     name: 'root',
     children: [],
@@ -191,10 +210,53 @@ function parse(source: string): Node {
       throw new Error(`Line ${lineNumber + 1}: invalid value "${line}"`)
     }
 
-    parent.value = parseValue(type, rawValue)
+    parent.value = parseValue(type, rawValue, variables)
   }
 
   return root
+}
+
+function resolveVariable(expression: string, variables: Variables): unknown {
+  const parts = expression.split('.')
+
+  const namespace = parts.shift()
+
+  if (!namespace) {
+    throw new Error(`Invalid variable "${expression}"`)
+  }
+
+  if (!(namespace in variables)) {
+    throw new Error(`Unknown variable namespace "${namespace}"`)
+  }
+
+  let value: unknown = variables[namespace as keyof Variables]
+
+  for (const part of parts) {
+    if (typeof value !== 'object' || value === null || !(part in value)) {
+      throw new Error(`Cannot resolve variable "${expression}"`)
+    }
+
+    value = (value as Record<string, unknown>)[part]
+  }
+
+  return value
+}
+
+function interpolate(value: string, variables: Variables): string {
+  return value.replace(
+    /\$\{([a-zA-Z_$][\w$]*(?:\.[a-zA-Z_$][\w$]*)*)}/g,
+    (_, expression: string) => {
+      const resolved = resolveVariable(expression, variables)
+
+      if (typeof resolved === 'object' && resolved !== null) {
+        throw new Error(
+          `Variable "${expression}" resolves to an object and cannot be used in a string`
+        )
+      }
+
+      return String(resolved)
+    }
+  )
 }
 
 function applyType(value: Primitive, type?: ValueType): Primitive {
@@ -299,8 +361,20 @@ function build(root: Node): Record<string, unknown> {
 async function main() {
   const source = await readFile(INPUT, 'utf8')
 
-  const tree = parse(source)
+  const packageJson = JSON.parse(
+    await readFile(PACKAGE_JSON, 'utf8')
+  ) as PackageJson
+
+  const variables: Variables = {
+    pkg: packageJson,
+  }
+
+  const tree = parse(source, variables)
   const output = build(tree)
+
+  await mkdir(dirname(OUTPUT), {
+    recursive: true,
+  })
 
   await writeFile(OUTPUT, JSON.stringify(output, null, 2) + '\n', 'utf8')
 
