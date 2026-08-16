@@ -1,6 +1,6 @@
 {
   "name": "@a35hie/purpamoled-plus",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Vorlie’s PurpAmoLED but updated to implement Themes+",
   "keywords": [
     "discord",
@@ -20,9 +20,12 @@
   "main": "src/parser.ts",
   "scripts": {
     "parse": "bun run src/parser.ts",
-    "dev": "bun run src/dev.ts"
+    "dev": "bun run src/dev.ts",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@types/node": "^26.2.0"
+    "@types/node": "^26.2.0",
+    "bun-types": "^1.3.14",
+    "typescript": "^7.0.2"
   }
 }

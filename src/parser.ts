@@ -184,7 +184,12 @@ function parse(source: string): Node {
       throw new Error(`Line ${lineNumber + 1}: invalid syntax "${line}"`)
     }
 
-    const [, type, rawValue] = valueMatch
+    const type = valueMatch[1]
+    const rawValue = valueMatch[2]
+
+    if (type === undefined || rawValue === undefined) {
+      throw new Error(`Line ${lineNumber + 1}: invalid value "${line}"`)
+    }
 
     parent.value = parseValue(type, rawValue)
   }
